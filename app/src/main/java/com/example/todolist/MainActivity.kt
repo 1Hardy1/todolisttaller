@@ -6,29 +6,28 @@ import android.os.Bundle
 import android.view.View
 import android.widget.*
 import kotlinx.android.synthetic.main.activity_main.*
-import java.io.FileOutputStream
-import java.io.PrintStream
+import java.io.*
 import java.util.*
 import kotlin.collections.ArrayList
-import java.io.File
-import java.io.FileWriter
 import java.lang.Exception
 
 class MainActivity : AppCompatActivity() {
 
-    val taskArray = ArrayList<String>()
     var listAdapter: ArrayAdapter<String>? = null
-
+    private var ToDoList: MutableList<String>? = null
+    var FILE_NAME: String = "taskfile.txt"
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        ToDoList= ArrayList()
         fileReader()
         addItems()
         val taskList = findViewById<ListView>(R.id.list_ToDo)
         taskList.setOnItemLongClickListener { Parent, view, position, id ->
-            taskArray.remove(taskList.getItemAtPosition(position))
+            ToDoList!!.remove(taskList.getItemAtPosition(position))
 
 
         }
@@ -40,10 +39,11 @@ class MainActivity : AppCompatActivity() {
         val btnRefresh =findViewById<Button>(R.id.btnRefresh)
         val taskList = findViewById<ListView>(R.id.list_ToDo)
         taskList.setOnItemLongClickListener { Parent, view, position, id ->
-            taskArray.remove(taskList.getItemAtPosition(position))
+            ToDoList!!.remove(taskList.getItemAtPosition(position))
 
         }
         listAdapter!!.notifyDataSetChanged()
+        true
         Toast.makeText(this, "Got it!", Toast.LENGTH_SHORT).show()
 
 
@@ -60,35 +60,64 @@ class MainActivity : AppCompatActivity() {
             }
 
         //Llenar arreglo
-        taskArray.add(itemTask)
+        ToDoList!!.add(itemTask)
         val taskList = findViewById<ListView>(R.id.list_ToDo)
 
         //Llenar la listView
         addItems()
 
 
-
     }
 
     fun addItems(){
-        listAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, taskArray)
+        listAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, ToDoList!!)
         list_ToDo?.adapter = listAdapter
+        listAdapter!!.notifyDataSetChanged()
     }
 
 
-
-
-
-    fun fileReader() : ArrayList<String>{
+    fun fileReader() : MutableList<String>? {
         val inputStream = resources.openRawResource(R.raw.taskfile)
         val scan= Scanner(inputStream)
         while (scan.hasNextLine()){
             val line = scan.nextLine()
-            taskArray.add(line)
+            ToDoList!!.add(line)
         }
-        return taskArray
+        return ToDoList
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (ToDoList != null) {
+            try {
+                val scanner = Scanner(openFileInput(FILE_NAME))
+                while (scanner.hasNext()) {
+                    val line = scanner.nextLine()
+                    ToDoList!!.add(line)
+                }
+                scanner.close()
+                listAdapter!!.notifyDataSetChanged()
+            } catch (e: FileNotFoundException) {
+                e.printStackTrace()
+            }
+
+        }
+
+    }
+    override fun onPause() {
+        super.onPause()
+
+        try {
+            val printStream = PrintStream(openFileOutput(FILE_NAME, MODE_PRIVATE))
+            for (i in ToDoList!!.indices) {
+                printStream.println(ToDoList!![i])
+            }
+            printStream.close()
+        } catch (e: FileNotFoundException) {
+            e.printStackTrace()
+        }
+
+    }
 
 
 
